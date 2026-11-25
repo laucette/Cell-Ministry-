@@ -16,7 +16,8 @@ export default async (req) => {
   const route = url.pathname.replace(/^\/api\//, "").replace(/\/$/, "");
   const q = url.searchParams;
   const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
-  const isAdmin = !!process.env.ADMIN_KEY && req.headers.get("x-admin-key") === process.env.ADMIN_KEY;
+  const adminKey = (process.env.ADMIN_KEY || "").trim();
+  const isAdmin = !!adminKey && (req.headers.get("x-admin-key") || "").trim() === adminKey;
 
   try {
     const roster = (await store.get("roster", { type: "json" })) || [];
@@ -51,6 +52,7 @@ export default async (req) => {
 
     // ---- admin endpoints (x-admin-key header) ----
     if (route.startsWith("admin/")) {
+      if (!adminKey) return json({ error: "The server cannot see ADMIN_KEY. Check it is set for Functions in Netlify, then redeploy." }, 500);
       if (!isAdmin) return json({ error: "Wrong or missing admin key." }, 401);
       const a = route.slice(6);
       if (a === "state") {
