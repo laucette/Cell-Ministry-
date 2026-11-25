@@ -175,13 +175,14 @@ function subsView(){
     <p class="hint">Enter the admin key you set in Netlify (the ADMIN_KEY variable) to load leader submissions.</p>
     <div class="bar"><input type="password" id="ak" placeholder="Admin key" autocomplete="current-password" value="${esc(AK())}"><button class="btn" id="cn">Connect</button></div>
     ${srv.msg?`<p class="hint" style="color:var(--r)">${esc(srv.msg)}</p>`:''}</div>`;
-  const o=srv.open,isOpen=o&&o.y===S.y&&o.m===S.m&&o.w===S.w;
+  const o=srv.open,isSel=o&&o.y===S.y&&o.m===S.m&&o.w===S.w,closed=o&&o.closed;
   const order={pending:0,rejected:1,approved:2};
   const list=[...srv.subs].sort((a,b)=>order[a.status]-order[b.status]||a.ts-b.ts);
-  let h=`<div class="card"><h3>${o?`Open for leaders: ${M[o.m]} Week ${o.w}, ${o.y}`:'Not open for leaders yet'}</h3>
-   <div class="acts">${isOpen?'':`<button class="btn" id="op">Open ${M[S.m]} Week ${S.w} for leaders</button>`}
+  let h=`<div class="card"><h3>${o?`${closed?'Closed':'Open'} for leaders: ${M[o.m]} Week ${o.w}, ${o.y}`:'Not open for leaders yet'}</h3>
+   <div class="acts">${isSel?(closed?'<button class="btn" id="re">Reopen this week</button>':'<button class="btn no" id="cl">Close submissions</button>'):`<button class="btn" id="op">Open ${M[S.m]} Week ${S.w} for leaders</button>`}
    <button class="btn alt" id="rf">Refresh</button>
    ${pending()?`<button class="btn ok" id="aa">Approve all pending (${pending()})</button>`:''}</div>
+   ${o&&!isSel?`<p class="hint" style="margin:10px 0 0">Opening this week replaces ${M[o.m]} Week ${o.w} as the week leaders submit to. You can reopen that one later.</p>`:''}
    <p class="hint" style="margin:10px 0 0">${srv.subs.length} of ${S.roster.length} leaders have submitted for ${M[S.m]} Week ${S.w}.</p>
    ${srv.msg?`<p class="hint" style="color:var(--r)">${esc(srv.msg)}</p>`:''}</div>`;
   if(!list.length)return h+empty('No submissions for this week yet.');
@@ -211,9 +212,26 @@ async function review(code,status,off){
 const offFor=c=>{const el=document.querySelector(`[data-off="${c}"]`);return el?el.value:'g'};
 
 const link=r=>location.origin+'/submit.html?c='+r.code;
-const wa=r=>{let p=String(r.ph||'').replace(/\D/g,'');if(p.startsWith('0'))p='234'+p.slice(1);
-  const t=encodeURIComponent(`Hello ${r.leader}, please submit your cell meeting and Sunday attendance report here: ${link(r)}`);
-  return `https://wa.me/${p}?text=${t}`};
+const phone=r=>{let p=String(r.ph||'').replace(/\D/g,'');if(p.startsWith('0'))p='234'+p.slice(1);return p};
+const wa=(r,k)=>{const t=encodeURIComponent(k==='rem'
+  ?`Hello ${r.leader}, a reminder to submit your cell meeting and Sunday attendance report for ${M[S.m]} Week ${S.w} here: ${link(r)}`
+  :`Hello ${r.leader}, please submit your cell meeting and Sunday attendance report here: ${link(r)}`);
+  return `https://wa.me/${phone(r)}?text=${t}`};
+let bq=null;
+const sendable=k=>S.roster.filter(r=>r.code&&phone(r).length>=10&&(k!=='rem'||!srv.subs.some(s=>s.code===r.code)));
+function bulkCard(){
+  if(bq){
+    const r=bq.list[bq.i];
+    if(!r)return `<div class="card"><h3>All done</h3><p class="hint">You have been through all ${bq.list.length} leaders.</p><button class="btn" id="bq-x">Close</button></div>`;
+    return `<div class="card"><h3>Sending ${bq.i+1} of ${bq.list.length}</h3>
+    <p style="margin:6px 0"><b>${esc(r.leader)}</b><small style="display:block;color:var(--ink2)">${esc(r.cell)}</small></p>
+    <div class="acts"><button class="btn" id="bq-go">Open WhatsApp for ${esc(r.leader.split(' ')[0])}</button><button class="btn alt" id="bq-sk">Skip</button><button class="btn alt" id="bq-x">Stop</button></div>
+    <p class="hint" style="margin-top:10px">WhatsApp opens with the message ready. Press send there, come back to this tab, and tap the button again for the next leader.</p></div>`}
+  const all=sendable('all').length,pd=srv.on?sendable('rem').length:0;
+  return `<div class="card"><h3>Send links on WhatsApp</h3>
+  <p class="hint">Goes through your leaders one after another with the message already written. ${all} of ${S.roster.length} leaders have a WhatsApp number in the roster.</p>
+  <div class="bar"><label>Send to<select id="bq-aud"><option value="all">All leaders (${all})</option>${srv.on?`<option value="rem">Reminder: not yet submitted this week (${pd})</option>`:''}</select></label>
+  <button class="btn" id="bq-st">Start sending</button></div></div>`}
 
 function roster(){
   const txt=S.roster.map(r=>[r.pcf,r.leader,r.cell,r.ph||''].join('\t')).join('\n');
@@ -225,9 +243,10 @@ function roster(){
   <label class="btn alt">Restore backup<input type="file" id="rfj" accept=".json" hidden></label></div>
   <p class="hint">${srv.on?'Saving also syncs the roster to the server and creates access codes.':'Connect on the Submissions tab to create leader access codes.'} Reports you approve are stored in this browser, so back up regularly.</p></div>`;
   if(S.roster.some(r=>r.code)){
+    h+=bulkCard();
     h+=`<div class="card"><h3>Leader access</h3><p class="hint">Each leader has a personal link. Send it by WhatsApp or copy it.</p>`;
     S.roster.forEach((r,i)=>{if(!r.code)return;
-      h+=`<div class="row"><div class="who"><b>${esc(r.leader)}</b><small>${esc(r.cell)} · <span class="code">${esc(r.code)}</span></small></div>
+      h+=`<div class="row"><div class="who"><b>${esc(r.leader)}</b><small>${esc(r.cell)} · <span class="code">${esc(r.code)}</span>${S.sent&&S.sent[r.code]?' · <b style="color:var(--g)">Sent</b>':''}</small></div>
       <div class="acts" style="margin:0"><button class="btn alt sm" data-cp="${i}">Copy link</button><a class="btn sm" href="${esc(wa(r))}" target="_blank" rel="noopener" style="text-decoration:none">WhatsApp</a></div></div>`});
     h+='</div>'}
   return h}
@@ -250,6 +269,14 @@ document.addEventListener('click',async e=>{
   if(id==='exp')return exportXlsx();
   if(id==='cn'){try{sessionStorage.setItem('ak',$('#ak').value.trim())}catch(x){}return loadSrv()}
   if(id==='rf')return loadSrv();
+  if(id==='cl'||id==='re'){try{const j=await api('admin/close',{closed:id==='cl'});srv.open=j.open;srv.msg=''}catch(x){srv.msg=x.message}return render()}
+  if(id==='bq-st'){const k=$('#bq-aud').value,list=sendable(k);
+    if(!list.length)return alert('No leaders to send to. Add WhatsApp numbers to the roster and save it.');
+    bq={list,i:0,k};return render()}
+  if(id==='bq-go'){const r=bq.list[bq.i];window.open(wa(r,bq.k),'_blank','noopener');
+    S.sent=S.sent||{};S.sent[r.code]=Date.now();save();bq.i++;return render()}
+  if(id==='bq-sk'){bq.i++;return render()}
+  if(id==='bq-x'){bq=null;return render()}
   if(id==='op'){try{const j=await api('admin/open',{y:S.y,m:S.m,w:S.w});srv.open=j.open;srv.msg=''}catch(x){srv.msg=x.message}return render()}
   const rv=e.target.closest('[data-rv]');
   if(rv){try{await review(rv.dataset.c,rv.dataset.rv,offFor(rv.dataset.c));srv.msg=''}catch(x){srv.msg=x.message}return render()}
