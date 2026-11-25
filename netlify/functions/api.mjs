@@ -16,7 +16,7 @@ export default async (req) => {
   const route = url.pathname.replace(/^\/api\//, "").replace(/\/$/, "");
   const q = url.searchParams;
   const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
-  const adminKey = (process.env.ADMIN_KEY || "").trim();
+  const adminKey = String((typeof Netlify !== "undefined" && Netlify.env.get("ADMIN_KEY")) || process.env.ADMIN_KEY || "").trim();
   const isAdmin = !!adminKey && (req.headers.get("x-admin-key") || "").trim() === adminKey;
 
   try {
@@ -35,6 +35,7 @@ export default async (req) => {
       const l = leaderFor(body.code);
       if (!l) return json({ error: "That access code is not valid." }, 404);
       if (!open) return json({ error: "Submissions are not open yet." }, 409);
+      if (open.closed) return json({ error: "Submissions for this week are closed." }, 409);
       const key = `s/${wk(open.y, open.m, open.w)}/${l.code}`;
       const old = await store.get(key, { type: "json" });
       if (old && old.status === "approved") return json({ error: "Your report was already approved." }, 409);
@@ -72,7 +73,13 @@ export default async (req) => {
         return json({ ok: true, roster: clean });
       }
       if (a === "open" && req.method === "POST") {
-        const o = { y: Number(body.y), m: Number(body.m), w: Number(body.w) };
+        const o = { y: Number(body.y), m: Number(body.m), w: Number(body.w), closed: false };
+        await store.setJSON("open", o);
+        return json({ ok: true, open: o });
+      }
+      if (a === "close" && req.method === "POST") {
+        if (!open) return json({ error: "No week is open yet." }, 409);
+        const o = { ...open, closed: !!body.closed };
         await store.setJSON("open", o);
         return json({ ok: true, open: o });
       }
