@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CM & SA Reports Portal</title>
+<style>
+:root{--ink:#1c1b3a;--ink2:#4a4970;--bg:#eef1f7;--card:#fff;--line:#dde1ee;--acc:#4f46e5;--g:#2fa36b;--y:#f2c230;--r:#e5484d;--n:#d5d9e4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Avenir Next","Segoe UI",system-ui,sans-serif}
+header{background:var(--ink);color:#fff;padding:18px 16px 0}
+.wrap{max-width:980px;margin:0 auto}
+header h1{margin:0 0 2px;font-size:20px}
+header p{margin:0 0 12px;color:#b9b8e0;font-size:13px}
+nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{background:none;border:0;color:#b9b8e0;padding:10px 14px;font:inherit;font-weight:600;cursor:pointer;border-radius:10px 10px 0 0;white-space:nowrap}
+nav button.on{background:var(--bg);color:var(--ink)}
+.bdg{background:var(--r);color:#fff;border-radius:10px;font-size:11px;padding:1px 7px;margin-left:5px}
+main{max-width:980px;margin:0 auto;padding:16px 14px 60px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:14px}
+.bar label{display:flex;flex-direction:column;font-size:12px;color:var(--ink2);gap:3px}
+select,input[type=number],input[type=password],textarea{font:inherit;border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:#fff;color:var(--ink)}
+button.btn,label.btn{font:inherit;font-weight:600;border:0;border-radius:8px;padding:9px 14px;background:var(--acc);color:#fff;cursor:pointer;display:inline-block}
+.btn.alt{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.ok{background:var(--g)}.btn.no{background:#fff;color:var(--r);border:1px solid var(--r)}
+.btn.sm{padding:6px 10px;font-size:13px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #a5a0f5;outline-offset:1px}
+.sp{flex:1}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--card);border-radius:12px;padding:12px 14px;border-left:5px solid var(--n)}
+.stat b{display:block;font-size:24px;line-height:1.1}
+.stat span{font-size:12px;color:var(--ink2)}
+.stat.g{border-color:var(--g)}.stat.a{border-color:var(--acc)}
+.card{background:var(--card);border-radius:12px;padding:6px 14px 12px;margin-bottom:14px}
+.card h3{margin:10px 0 4px;font-size:15px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.who small,.sub small{display:block;color:var(--ink2);font-size:12px}
+.ctl{display:flex;gap:14px;align-items:center}
+.ctl label{display:flex;flex-direction:column;align-items:center;font-size:11px;color:var(--ink2);gap:4px}
+.ctl input{width:74px;text-align:center}
+.sq{width:38px;height:38px;border-radius:10px;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer;background:var(--n)}
+.sq.g,td.g{background:var(--g)}.sq.y,td.y{background:var(--y)}.sq.r,td.r{background:var(--r)}.sq.n,td.n{background:var(--n)}
+.tw{overflow-x:auto;background:var(--card);border-radius:12px;padding:6px}
+.ttl{font-weight:700;text-align:center;padding:12px 8px;font-size:14px}
+table{border-collapse:separate;border-spacing:0;width:100%}
+th{font-size:12px;text-align:left;color:var(--ink2);padding:8px;border-bottom:2px solid var(--ink)}
+td{padding:8px;border-bottom:1px solid var(--line)}
+td small{display:none;color:var(--ink2)}
+td.g,td.y,td.r,td.n{width:110px;border-left:3px solid #fff;border-bottom:3px solid #fff}
+tr.ph td{background:#e4e3fb;font-weight:700;border:0}
+tr.tot td{font-weight:700;border-top:2px solid var(--ink)}
+.mb{display:none}
+.leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin:10px 4px}
+.leg i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:5px;vertical-align:-1px}
+.hint{color:var(--ink2);font-size:13px;margin:0 0 12px}
+.empty{background:var(--card);border-radius:12px;padding:28px;text-align:center;color:var(--ink2)}
+textarea{width:100%;min-height:200px;font-family:ui-monospace,Menlo,monospace;font-size:13px}
+.tag{display:inline-block;border-radius:6px;padding:1px 8px;font-size:12px;font-weight:600;margin:2px 4px 2px 0;background:var(--n)}
+.tag.g{background:#cdeedd}.tag.r{background:#fbd5d7}.tag.p{background:#fff3cc}
+.sub{border-top:1px solid var(--line);padding:12px 0}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.code{font-family:ui-monospace,Menlo,monospace;font-weight:700;letter-spacing:1px}
+@media(max-width:620px){
+  main{padding:12px 10px 50px}
+  .row{flex-direction:column;align-items:flex-start}
+  .bar label{flex:1;min-width:90px}.bar select{width:100%}
+  .bar .btn{width:100%}
+  th,td{padding:7px 4px;font-size:13px}
+  .hc,.dk{display:none}.mb{display:inline}
+  td small{display:block}
+  td.g,td.y,td.r,td.n{width:46px}
+  .ttl{font-size:12px}
+  tr.ph td{font-size:12px}
+  .acts .btn{flex:1}
+}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>CM &amp; SA Reports Portal</h1>
+<p>Cell meetings, offerings and Sunday attendance in one place</p>
+<nav id="nav"></nav>
+</div></header>
+<main id="app"></main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const M=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const KEY='cmsa-portal-v1', now=new Date();
+let S=null;
+try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+S=S||{roster:[],weeks:{},y:now.getFullYear(),m:now.getMonth(),w:Math.min(5,Math.ceil(now.getDate()/7)),tab:'summary'};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const wk=()=>{const k=S.y+'-'+S.m+'-'+S.w;return S.weeks[k]=S.weeks[k]||{}};
+const rid=r=>r.pcf+'|'+r.leader+'|'+r.cell;
+const groups=()=>{const g={};S.roster.forEach(r=>(g[r.pcf]=g[r.pcf]||[]).push(r));return g};
+const title=()=>`SERVICE TWO ${M[S.m].toUpperCase()} WEEK ${S.w} REPORTS AND OFFERINGS SUBMITTED BY MONDAY 10AM`;
+const sac=e=>e.sa==null?'n':e.sa>0?'g':'r';
+const NAMES={g:'Yes / early',y:'Late',r:'No / not submitted',n:'Not entered'};
+const srv={on:false,subs:[],open:null,msg:''};
+
+/* ---------- server ---------- */
+const AK=()=>{try{return sessionStorage.getItem('ak')||''}catch(e){return ''}};
+async function api(path,body){
+  const o={headers:{'x-admin-key':AK(),'content-type':'application/json'}};
+  if(body){o.method='POST';o.body=JSON.stringify(body)}
+  const r=await fetch('/api/'+path,o);const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(j.error||'Request failed ('+r.status+')');return j}
+async function loadSrv(){
+  try{const j=await api(`admin/state?y=${S.y}&m=${S.m}&w=${S.w}`);
+    srv.on=true;srv.subs=j.subs;srv.open=j.open;srv.msg='';
+    if(!S.roster.length&&j.roster.length){S.roster=j.roster;save()}
+    else if(j.roster.length){const codes={};j.roster.forEach(r=>codes[rid(r)]=r);S.roster.forEach(r=>{const x=codes[rid(r)];if(x){r.code=x.code;r.ph=r.ph||x.ph}})}
+  }catch(e){srv.on=false;srv.msg=e.message==='Failed to fetch'?'Could not reach the server. Is the site deployed on Netlify?':e.message}
+  render()}
+const pending=()=>srv.subs.filter(s=>s.status==='pending').length;
+
+/* ---------- stats / views ---------- */
+function stats(rows){const d=wk();let cm=0,of=0,late=0,sa=0,pend=0;
+  rows.forEach(r=>{const e=d[rid(r)]||{};
+    if(e.cm==='g')cm++; if(e.off==='g'||e.off==='y')of++; if(e.off==='y')late++;
+    if(e.sa>0)sa+=+e.sa; if(!e.cm||!e.off||e.sa==null)pend++});
+  return{n:rows.length,cm,of,late,sa,pend}}
+
+function controls(){
+  const yrs=[S.y-1,S.y,S.y+1];
+  return `<div class="bar">
+  <label>Year<select data-k="y">${yrs.map(y=>`<option ${y===S.y?'selected':''}>${y}</option>`).join('')}</select></label>
+  <label>Month<select data-k="m">${M.map((m,i)=>`<option value="${i}" ${i===S.m?'selected':''}>${m}</option>`).join('')}</select></label>
+  <label>Week<select data-k="w">${[1,2,3,4,5].map(w=>`<option ${w===S.w?'selected':''}>${w}</option>`).join('')}</select></label>
+  <span class="sp"></span>
+  ${S.tab==='summary'?'<button class="btn" id="exp">Download Excel</button>':''}</div>`}
+
+const empty=t=>`<div class="empty">${t}</div>`;
+
+function summary(){
+  if(!S.roster.length)return empty('No leaders yet. Open Roster and upload your roster sheet.');
+  const d=wk(),a=stats(S.roster),g=groups();let n=0,rows='';
+  for(const p in g){const s=stats(g[p]);
+    rows+=`<tr class="ph"><td colspan="6">${esc(p)} · CM ${s.cm} out of ${s.n} · Offering ${s.of} out of ${s.n}</td></tr>`;
+    g[p].forEach(r=>{const e=d[rid(r)]||{};n++;
+      rows+=`<tr><td>${n}</td><td>${esc(r.leader)}<small>${esc(r.cell)}</small></td><td class="hc">${esc(r.cell)}</td>
+      <td class="${e.cm||'n'}" title="${NAMES[e.cm||'n']}"></td>
+      <td class="${e.off||'n'}" title="${NAMES[e.off||'n']}"></td>
+      <td class="${sac(e)}" title="${NAMES[sac(e)]}"></td></tr>`})}
+  rows+=`<tr class="tot"><td></td><td>TOTAL</td><td class="hc"></td><td>${a.cm}/${a.n}</td><td>${a.of}/${a.n}</td><td>${a.sa}</td></tr>`;
+  return `<div class="stats">
+   <div class="stat g"><b>${a.cm}/${a.n}</b><span>Cell meetings held</span></div>
+   <div class="stat a"><b>${a.of}/${a.n}</b><span>Offerings in (${a.late} late)</span></div>
+   <div class="stat g"><b>${a.sa}</b><span>Sunday attendance</span></div>
+   <div class="stat"><b>${a.pend}</b><span>Cells with entries pending</span></div></div>
+  <div class="tw"><div class="ttl">${title()}</div><table>
+  <tr><th>S/N</th><th>Leader</th><th class="hc">Cell name</th><th><span class="dk">Cell meeting held</span><span class="mb">CM</span></th><th><span class="dk">Offering</span><span class="mb">Offer.</span></th><th><span class="dk">Sunday service</span><span class="mb">SA</span></th></tr>${rows}</table></div>
+  <div class="leg"><span><i style="background:var(--g)"></i>Early / reported</span><span><i style="background:var(--y)"></i>Late</span><span><i style="background:var(--r)"></i>Not submitted</span><span><i style="background:var(--n)"></i>Not entered</span></div>`}
+
+function entry(){
+  if(!S.roster.length)return empty('Add your leaders under Roster first.');
+  const d=wk(),g=groups();
+  let h='<p class="hint">Tap a square to cycle its status. Type Sunday attendance from the SA report. Leader submissions you approve fill these in automatically.</p>';
+  for(const p in g){h+=`<section class="card"><h3>${esc(p)}</h3>`;
+    g[p].forEach(r=>{const i=S.roster.indexOf(r),e=d[rid(r)]||{};
+      h+=`<div class="row"><div class="who"><b>${esc(r.leader)}</b><small>${esc(r.cell)}</small></div>
+      <div class="ctl"><label>Meeting<button class="sq ${e.cm||'n'}" data-i="${i}" data-f="cm" aria-label="Cell meeting status"></button></label>
+      <label>Offering<button class="sq ${e.off||'n'}" data-i="${i}" data-f="off" aria-label="Offering status"></button></label>
+      <label>Sunday<input type="number" min="0" inputmode="numeric" value="${e.sa??''}" data-i="${i}" data-f="sa"></label></div></div>`});
+    h+='</section>'}
+  return h}
+
+const fmtT=ts=>new Date(ts).toLocaleString('en-NG',{weekday:'short',hour:'numeric',minute:'2-digit',timeZone:'Africa/Lagos'});
+function subsView(){
+  if(!srv.on)return `<div class="card"><h3>Connect to the server</h3>
+    <p class="hint">Enter the admin key you set in Netlify (the ADMIN_KEY variable) to load leader submissions.</p>
+    <div class="bar"><input type="password" id="ak" placeholder="Admin key" autocomplete="current-password" value="${esc(AK())}"><button class="btn" id="cn">Connect</button></div>
+    ${srv.msg?`<p class="hint" style="color:var(--r)">${esc(srv.msg)}</p>`:''}</div>`;
+  const o=srv.open,isOpen=o&&o.y===S.y&&o.m===S.m&&o.w===S.w;
+  const order={pending:0,rejected:1,approved:2};
+  const list=[...srv.subs].sort((a,b)=>order[a.status]-order[b.status]||a.ts-b.ts);
+  let h=`<div class="card"><h3>${o?`Open for leaders: ${M[o.m]} Week ${o.w}, ${o.y}`:'Not open for leaders yet'}</h3>
+   <div class="acts">${isOpen?'':`<button class="btn" id="op">Open ${M[S.m]} Week ${S.w} for leaders</button>`}
+   <button class="btn alt" id="rf">Refresh</button>
+   ${pending()?`<button class="btn ok" id="aa">Approve all pending (${pending()})</button>`:''}</div>
+   <p class="hint" style="margin:10px 0 0">${srv.subs.length} of ${S.roster.length} leaders have submitted for ${M[S.m]} Week ${S.w}.</p>
+   ${srv.msg?`<p class="hint" style="color:var(--r)">${esc(srv.msg)}</p>`:''}</div>`;
+  if(!list.length)return h+empty('No submissions for this week yet.');
+  h+='<section class="card">';
+  list.forEach(s=>{
+    const dflt=s.off||(s.offering==='y'?'g':'r');
+    h+=`<div class="sub"><b>${esc(s.leader)}</b><small>${esc(s.cell)} · ${esc(s.pcf)}</small>
+    <div><span class="tag ${s.cm==='g'?'g':'r'}">Meeting ${s.cm==='g'?'held':'not held'}</span>
+    <span class="tag">${s.members} members + ${s.ft} first timers = ${s.sa}</span>
+    <span class="tag ${s.offering==='y'?'g':'r'}">Offering ${s.offering==='y'?'reported':'not reported'}</span>
+    <span class="tag ${s.status==='pending'?'p':s.status==='approved'?'g':'r'}">${s.status}</span></div>
+    <small>Submitted ${fmtT(s.ts)}${s.note?' · '+esc(s.note):''}</small>
+    <div class="acts"><select data-off="${s.code}" aria-label="Offering colour"><option value="g" ${dflt==='g'?'selected':''}>Offering: early</option><option value="y" ${dflt==='y'?'selected':''}>Offering: late</option><option value="r" ${dflt==='r'?'selected':''}>Offering: not submitted</option></select>
+    ${s.status!=='approved'?`<button class="btn ok sm" data-rv="approved" data-c="${s.code}">Approve</button>`:''}
+    ${s.status==='pending'?`<button class="btn no sm" data-rv="rejected" data-c="${s.code}">Reject</button>`:''}
+    ${s.status==='approved'?`<button class="btn alt sm" data-rv="pending" data-c="${s.code}">Undo</button>`:''}</div></div>`});
+  return h+'</section>'}
+
+async function review(code,status,off){
+  const s=srv.subs.find(x=>x.code===code);if(!s)return;
+  await api('admin/review',{y:S.y,m:S.m,w:S.w,code,status,off});
+  s.status=status;s.off=off;
+  const k=rid(s),e=(wk()[k]=wk()[k]||{});
+  if(status==='approved'){e.cm=s.cm;e.off=off;e.sa=s.sa}
+  else if(status==='pending'){delete e.cm;delete e.off;delete e.sa}
+  save()}
+const offFor=c=>{const el=document.querySelector(`[data-off="${c}"]`);return el?el.value:'g'};
+
+const link=r=>location.origin+'/submit.html?c='+r.code;
+const wa=r=>{let p=String(r.ph||'').replace(/\D/g,'');if(p.startsWith('0'))p='234'+p.slice(1);
+  const t=encodeURIComponent(`Hello ${r.leader}, please submit your cell meeting and Sunday attendance report here: ${link(r)}`);
+  return `https://wa.me/${p}?text=${t}`};
+
+function roster(){
+  const txt=S.roster.map(r=>[r.pcf,r.leader,r.cell,r.ph||''].join('\t')).join('\n');
+  let h=`<div class="card"><h3>Roster</h3><p class="hint">Upload the roster sheet, or paste one cell per line: <b>PCF, leader, cell name, WhatsApp (optional)</b>.</p>
+  <div class="bar"><label class="btn">Upload roster (.xlsx)<input type="file" id="xf" accept=".xlsx" hidden></label></div>
+  <textarea id="rt" placeholder="PCF Grace\tLeader name\tCell name\t08012345678">${esc(txt)}</textarea>
+  <div class="bar" style="margin-top:12px"><button class="btn" id="rs">Save roster</button><span class="sp"></span>
+  <button class="btn alt" id="bk">Back up data</button>
+  <label class="btn alt">Restore backup<input type="file" id="rfj" accept=".json" hidden></label></div>
+  <p class="hint">${srv.on?'Saving also syncs the roster to the server and creates access codes.':'Connect on the Submissions tab to create leader access codes.'} Reports you approve are stored in this browser, so back up regularly.</p></div>`;
+  if(S.roster.some(r=>r.code)){
+    h+=`<div class="card"><h3>Leader access</h3><p class="hint">Each leader has a personal link. Send it by WhatsApp or copy it.</p>`;
+    S.roster.forEach((r,i)=>{if(!r.code)return;
+      h+=`<div class="row"><div class="who"><b>${esc(r.leader)}</b><small>${esc(r.cell)} · <span class="code">${esc(r.code)}</span></small></div>
+      <div class="acts" style="margin:0"><button class="btn alt sm" data-cp="${i}">Copy link</button><a class="btn sm" href="${esc(wa(r))}" target="_blank" rel="noopener" style="text-decoration:none">WhatsApp</a></div></div>`});
+    h+='</div>'}
+  return h}
+
+function render(){
+  const bd=pending()?`<span class="bdg">${pending()}</span>`:'';
+  $('#nav').innerHTML=[['summary','Summary'],['subs','Submissions'+bd],['entry','Enter data'],['roster','Roster']].map(([k,l])=>`<button class="${S.tab===k?'on':''}" data-t="${k}">${l}</button>`).join('');
+  $('#app').innerHTML=(S.tab==='roster'?'':controls())+({summary,subs:subsView,entry,roster}[S.tab])();
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click',async e=>{
+  const t=e.target.closest('[data-t]');
+  if(t){S.tab=t.dataset.t;save();render();if(S.tab==='subs'&&AK()&&!srv.on)loadSrv();return}
+  const q=e.target.closest('.sq');
+  if(q){const r=S.roster[+q.dataset.i],f=q.dataset.f,seq=f==='cm'?['','g','r']:['','g','y','r'];
+    const row=(wk()[rid(r)]=wk()[rid(r)]||{});const nx=seq[(seq.indexOf(row[f]||'')+1)%seq.length];
+    if(nx)row[f]=nx;else delete row[f];q.className='sq '+(nx||'n');return save()}
+  const id=e.target.id;
+  if(id==='exp')return exportXlsx();
+  if(id==='cn'){try{sessionStorage.setItem('ak',$('#ak').value.trim())}catch(x){}return loadSrv()}
+  if(id==='rf')return loadSrv();
+  if(id==='op'){try{const j=await api('admin/open',{y:S.y,m:S.m,w:S.w});srv.open=j.open;srv.msg=''}catch(x){srv.msg=x.message}return render()}
+  const rv=e.target.closest('[data-rv]');
+  if(rv){try{await review(rv.dataset.c,rv.dataset.rv,offFor(rv.dataset.c));srv.msg=''}catch(x){srv.msg=x.message}return render()}
+  if(id==='aa'){try{for(const s of srv.subs.filter(x=>x.status==='pending'))await review(s.code,'approved',offFor(s.code));srv.msg=''}catch(x){srv.msg=x.message}return render()}
+  const cp=e.target.closest('[data-cp]');
+  if(cp){const r=S.roster[+cp.dataset.cp];try{await navigator.clipboard.writeText(link(r));cp.textContent='Copied'}catch(x){prompt('Copy this link',link(r))}return}
+  if(id==='rs'){
+    const rows=$('#rt').value.split('\n').map(l=>l.split(l.includes('\t')?'\t':',').map(s=>s.trim())).filter(p=>p.length>=3&&p[0]&&p[1])
+      .map(p=>({pcf:p[0],leader:p[1],cell:p[2],ph:p[3]||''}));
+    const old={};S.roster.forEach(r=>{if(r.code)old[rid(r)]=r.code});rows.forEach(r=>{if(old[rid(r)])r.code=old[rid(r)]});
+    S.roster=rows;save();
+    if(AK()){try{const j=await api('admin/roster',{roster:rows});S.roster=j.roster;srv.on=true;srv.msg='';save()}catch(x){srv.msg=x.message;alert('Saved here, but the server sync failed: '+x.message)}}
+    return render()}
+  if(id==='bk')return dl(new Blob([JSON.stringify(S)],{type:'application/json'}),'cm-sa-backup.json');
+});
+document.addEventListener('change',async e=>{
+  const k=e.target.dataset.k;
+  if(k){S[k]=+e.target.value;save();render();if(srv.on)loadSrv();return}
+  if(e.target.id==='xf'&&e.target.files[0]){
+    try{const wb=new ExcelJS.Workbook();await wb.xlsx.load(await e.target.files[0].arrayBuffer());
+      const out=[];wb.worksheets[0].eachRow(r=>out.push([1,2,3,4].map(i=>{const c=r.getCell(i).value;return c==null?'':String(c.text??c).trim()})));
+      if(out[0]&&/^pcf$/i.test(out[0][0]))out.shift();
+      $('#rt').value=out.filter(v=>v[0]&&v[1]).map(v=>v.join('\t')).join('\n')}
+    catch(x){alert('That file could not be read. Use the roster .xlsx template.')}return}
+  if(e.target.id==='rfj'&&e.target.files[0]){
+    e.target.files[0].text().then(t=>{try{S=Object.assign(S,JSON.parse(t));save();S.tab='summary';render()}catch(x){alert('That file is not a valid backup.')}})}
+});
+document.addEventListener('input',e=>{
+  if(e.target.dataset.f==='sa'){const r=S.roster[+e.target.dataset.i],row=(wk()[rid(r)]=wk()[rid(r)]||{});
+    if(e.target.value==='')delete row.sa;else row.sa=+e.target.value;save()}
+});
+
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+
+async function exportXlsx(){
+  if(!window.ExcelJS)return alert('Excel export needs an internet connection to load.');
+  const wb=new ExcelJS.Workbook(),ws=wb.addWorksheet('Summary'),d=wk(),g=groups(),a=stats(S.roster);
+  const F={g:'FF2FA36B',y:'FFF2C230',r:'FFE5484D'};
+  const fill=(c,k)=>{if(F[k])c.fill={type:'pattern',pattern:'solid',fgColor:{argb:F[k]}}};
+  ws.columns=[{width:6},{width:28},{width:28},{width:18},{width:20},{width:24}];
+  ws.mergeCells('A1:F1');const t=ws.getCell('A1');t.value=title();t.font={bold:true,size:13};t.alignment={horizontal:'center'};
+  const h=ws.addRow(['S/N','LEADER','CELL NAME','CELL MEETING HELD','CELL OFFERING SUBMISSION','SUNDAY SERVICE ATTENDANCE']);
+  h.font={bold:true};h.alignment={horizontal:'center',wrapText:true};
+  let n=0;
+  for(const p in g){const s=stats(g[p]);
+    const pr=ws.addRow([`${p}  -  CM ${s.cm} OUT OF ${s.n}  |  OFFERING ${s.of} OUT OF ${s.n}`]);
+    ws.mergeCells(pr.number,1,pr.number,6);pr.font={bold:true};
+    pr.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE4E3FB'}};
+    g[p].forEach(r=>{const e=d[rid(r)]||{};const row=ws.addRow([++n,r.leader,r.cell,'','','']);
+      fill(row.getCell(4),e.cm);fill(row.getCell(5),e.off);const k=sac(e);fill(row.getCell(6),k==='n'?'':k)})}
+  const tr=ws.addRow(['','TOTAL','',`${a.cm} OUT OF ${a.n}`,`${a.of} OUT OF ${a.n}`,a.sa]);tr.font={bold:true};
+  ws.eachRow(r=>r.eachCell(c=>{c.border={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}}}));
+  const buf=await wb.xlsx.writeBuffer();
+  dl(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`CM_Summary_${M[S.m]}_Week${S.w}.xlsx`);
+}
+render();
+if(AK())loadSrv();
+</script>
+</body>
+</html>

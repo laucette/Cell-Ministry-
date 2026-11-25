@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Submit your CM & SA report</title>
+<style>
+:root{--ink:#1c1b3a;--ink2:#4a4970;--bg:#eef1f7;--line:#dde1ee;--acc:#4f46e5;--g:#2fa36b;--y:#f2c230;--r:#e5484d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Avenir Next","Segoe UI",system-ui,sans-serif}
+header{background:var(--ink);color:#fff;padding:20px 18px}
+header h1{margin:0;font-size:20px}header p{margin:2px 0 0;color:#b9b8e0;font-size:13px}
+main{max-width:520px;margin:0 auto;padding:16px}
+.card{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px}
+h2{margin:0 0 2px;font-size:18px}.sub{color:var(--ink2);font-size:14px;margin:0 0 12px}
+label.f{display:block;font-weight:600;font-size:14px;margin:16px 0 6px}
+input,textarea{width:100%;font:inherit;border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff;color:var(--ink)}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{font:inherit;font-weight:600;padding:12px;border-radius:10px;border:2px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+.seg button.on.yes{background:var(--g);border-color:var(--g);color:#fff}
+.seg button.on.no{background:var(--r);border-color:var(--r);color:#fff}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tot{background:#e4e3fb;border-radius:10px;padding:10px 12px;font-weight:700;margin-top:12px}
+.btn{width:100%;margin-top:18px;font:inherit;font-weight:700;border:0;border-radius:12px;padding:14px;background:var(--acc);color:#fff;cursor:pointer}
+.btn:disabled{opacity:.6}
+.msg{border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:14px}
+.msg.ok{background:#dff5e9;color:#14613f}.msg.err{background:#fde3e4;color:#8a1f24}.msg.wait{background:#fff3cc;color:#6b5200}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #a5a0f5;outline-offset:1px}
+</style>
+</head>
+<body>
+<header><h1>CM &amp; SA Report</h1><p>Weekly submission for cell leaders</p></header>
+<main id="app"><div class="card">Loading…</div></main>
+<script>
+const M=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const $=s=>document.querySelector(s);
+const esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let code=(new URLSearchParams(location.search).get('c')||'').trim().toUpperCase();
+try{if(!code)code=localStorage.getItem('cmsa-code')||''}catch(e){}
+let me=null,form={cm:'',offering:'',members:'',ft:'',note:''},msg=null,busy=false;
+const STAT={pending:['wait','Submitted. Waiting for approval.'],approved:['ok','Approved. Thank you!'],rejected:['err','Your report needs a correction. Please update it and submit again.']};
+
+async function load(){
+  if(!code)return render();
+  try{
+    const r=await fetch('/api/me?code='+encodeURIComponent(code));const j=await r.json();
+    if(!r.ok){msg=['err',j.error];me=null;code='';return render()}
+    me=j;try{localStorage.setItem('cmsa-code',code)}catch(e){}
+    if(j.sub)form={cm:j.sub.cm==='g'?'yes':'no',offering:j.sub.offering==='y'?'yes':'no',members:j.sub.members,ft:j.sub.ft,note:j.sub.note||''};
+  }catch(e){msg=['err','Could not reach the server. Check your internet and try again.']}
+  render();
+}
+function render(){
+  const a=$('#app');
+  if(!me){a.innerHTML=`<div class="card"><h2>Enter your access code</h2><p class="sub">Use the link you were sent, or type the code here.</p>
+    ${msg?`<div class="msg ${msg[0]}">${esc(msg[1])}</div>`:''}
+    <input id="cd" placeholder="e.g. K7M2QX" autocapitalize="characters" autocomplete="off" value="${esc(code)}"><button class="btn" id="go">Continue</button></div>`;return}
+  const o=me.open,st=me.sub&&STAT[me.sub.status];
+  const locked=me.sub&&me.sub.status==='approved';
+  let h=`<div class="card"><h2>${esc(me.leader)}</h2><p class="sub">${esc(me.cell)} · ${esc(me.pcf)}</p>`;
+  if(!o)return a.innerHTML=h+`<div class="msg wait">Submissions are not open yet. Please check back soon.</div></div>`;
+  h+=`<p class="sub"><b>${M[o.m]} Week ${o.w}</b></p>`;
+  if(msg)h+=`<div class="msg ${msg[0]}">${esc(msg[1])}</div>`;
+  else if(st)h+=`<div class="msg ${st[0]}">${st[1]}</div>`;
+  h+=`<label class="f">Did your cell meeting hold?</label>${seg('cm')}
+  <label class="f">Have you submitted your offering?</label>${seg('offering')}
+  <label class="f">Sunday service attendance</label>
+  <div class="two"><div><small>Members</small><input type="number" min="0" inputmode="numeric" id="mb" value="${esc(form.members)}"></div>
+  <div><small>First timers</small><input type="number" min="0" inputmode="numeric" id="ft" value="${esc(form.ft)}"></div></div>
+  <div class="tot">Total attendance: <span id="tt">${(+form.members||0)+(+form.ft||0)}</span></div>
+  <label class="f">Note (optional)</label><textarea id="nt" rows="2" maxlength="300">${esc(form.note)}</textarea>
+  <button class="btn" id="sb" ${locked||busy?'disabled':''}>${me.sub?'Update report':'Submit report'}</button></div>`;
+  a.innerHTML=h;
+}
+const seg=k=>`<div class="seg" data-k="${k}"><button class="yes ${form[k]==='yes'?'on':''}" data-v="yes">Yes</button><button class="no ${form[k]==='no'?'on':''}" data-v="no">No</button></div>`;
+document.addEventListener('click',async e=>{
+  if(e.target.id==='go'){code=$('#cd').value.trim().toUpperCase();msg=null;return load()}
+  const b=e.target.closest('.seg button');
+  if(b){form[b.parentNode.dataset.k]=b.dataset.v;msg=null;return render()}
+  if(e.target.id==='sb'){
+    if(!form.cm||!form.offering||form.members===''||form.ft==='')return(msg=['err','Please answer every question and fill both attendance boxes (use 0 if none).'],render());
+    busy=true;e.target.disabled=true;
+    try{
+      const r=await fetch('/api/submit',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({code,cm:form.cm==='yes'?'g':'r',offering:form.offering==='yes'?'y':'n',members:form.members,ft:form.ft,note:form.note})});
+      const j=await r.json();
+      if(!r.ok)msg=['err',j.error];else{me.sub=j.sub;msg=['ok','Submitted. Waiting for approval.']}
+    }catch(x){msg=['err','Could not submit. Check your internet and try again.']}
+    busy=false;render();
+  }
+});
+document.addEventListener('input',e=>{
+  const m={mb:'members',ft:'ft',nt:'note'}[e.target.id];if(!m)return;form[m]=e.target.value;
+  if(m!=='note')$('#tt').textContent=(+form.members||0)+(+form.ft||0);
+});
+load();
+</script>
+</body>
+</html>
