@@ -37,7 +37,7 @@ const $=s=>document.querySelector(s);
 const esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let code=(new URLSearchParams(location.search).get('c')||'').trim().toUpperCase();
 try{if(!code)code=localStorage.getItem('cmsa-code')||''}catch(e){}
-let me=null,form={cm:'',offering:'',members:'',ft:'',note:''},msg=null,busy=false;
+let ro=false,me=null,form={cm:'',offering:'',members:'',ft:'',note:''},msg=null,busy=false;
 const STAT={pending:['wait','Submitted. Waiting for approval.'],approved:['ok','Approved. Thank you!'],rejected:['err','Your report needs a correction. Please update it and submit again.']};
 
 async function load(){
@@ -56,23 +56,24 @@ function render(){
     ${msg?`<div class="msg ${msg[0]}">${esc(msg[1])}</div>`:''}
     <input id="cd" placeholder="e.g. K7M2QX" autocapitalize="characters" autocomplete="off" value="${esc(code)}"><button class="btn" id="go">Continue</button></div>`;return}
   const o=me.open,st=me.sub&&STAT[me.sub.status];
-  const locked=me.sub&&me.sub.status==='approved';
+  const locked=(me.sub&&me.sub.status==='approved')||!!(o&&o.closed);ro=locked;
   let h=`<div class="card"><h2>${esc(me.leader)}</h2><p class="sub">${esc(me.cell)} · ${esc(me.pcf)}</p>`;
   if(!o)return a.innerHTML=h+`<div class="msg wait">Submissions are not open yet. Please check back soon.</div></div>`;
   h+=`<p class="sub"><b>${M[o.m]} Week ${o.w}</b></p>`;
+  if(o.closed)h+=`<div class="msg wait">Submissions for this week are closed.</div>`;
   if(msg)h+=`<div class="msg ${msg[0]}">${esc(msg[1])}</div>`;
   else if(st)h+=`<div class="msg ${st[0]}">${st[1]}</div>`;
   h+=`<label class="f">Did your cell meeting hold?</label>${seg('cm')}
   <label class="f">Have you submitted your offering?</label>${seg('offering')}
   <label class="f">Sunday service attendance</label>
-  <div class="two"><div><small>Members</small><input type="number" min="0" inputmode="numeric" id="mb" value="${esc(form.members)}"></div>
-  <div><small>First timers</small><input type="number" min="0" inputmode="numeric" id="ft" value="${esc(form.ft)}"></div></div>
+  <div class="two"><div><small>Members</small><input type="number" min="0" inputmode="numeric" id="mb" ${ro?'disabled':''} value="${esc(form.members)}"></div>
+  <div><small>First timers</small><input type="number" min="0" inputmode="numeric" id="ft" ${ro?'disabled':''} value="${esc(form.ft)}"></div></div>
   <div class="tot">Total attendance: <span id="tt">${(+form.members||0)+(+form.ft||0)}</span></div>
-  <label class="f">Note (optional)</label><textarea id="nt" rows="2" maxlength="300">${esc(form.note)}</textarea>
+  <label class="f">Note (optional)</label><textarea id="nt" ${ro?'disabled':''} rows="2" maxlength="300">${esc(form.note)}</textarea>
   <button class="btn" id="sb" ${locked||busy?'disabled':''}>${me.sub?'Update report':'Submit report'}</button></div>`;
   a.innerHTML=h;
 }
-const seg=k=>`<div class="seg" data-k="${k}"><button class="yes ${form[k]==='yes'?'on':''}" data-v="yes">Yes</button><button class="no ${form[k]==='no'?'on':''}" data-v="no">No</button></div>`;
+const seg=k=>`<div class="seg" data-k="${k}"><button class="yes ${form[k]==='yes'?'on':''}" data-v="yes" ${ro?'disabled':''}>Yes</button><button class="no ${form[k]==='no'?'on':''}" data-v="no" ${ro?'disabled':''}>No</button></div>`;
 document.addEventListener('click',async e=>{
   if(e.target.id==='go'){code=$('#cd').value.trim().toUpperCase();msg=null;return load()}
   const b=e.target.closest('.seg button');
