@@ -10,4 +10,4 @@ netlify/functions/api.mjs  serverless API storing roster + submissions (Netlify 
 2. Netlify > Site configuration > Environment variables: add ADMIN_KEY = a long private password.
 3. Deploy, then open your site > Submissions tab > enter the ADMIN_KEY > Connect.
 4. Roster tab > Upload roster (.xlsx) > Save roster. Access codes and links appear.
-5. Submissions tab > "Open <week> for leaders". Share links with PCF/Cell leaders.
+5. Submissions tab > "Open <week> for leaders". Share links with Cell leaders.
