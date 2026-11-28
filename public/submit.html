@@ -13,18 +13,23 @@ header h1{margin:0;font-size:20px}header p{margin:2px 0 0;color:#b9b8e0;font-siz
 main{max-width:520px;margin:0 auto;padding:16px}
 .card{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px}
 h2{margin:0 0 2px;font-size:18px}.sub{color:var(--ink2);font-size:14px;margin:0 0 12px}
-label.f{display:block;font-weight:600;font-size:14px;margin:16px 0 6px}
+h3{margin:22px 0 0;font-size:13px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink2)}
+label.f{display:block;font-weight:600;font-size:14px;margin:14px 0 6px}
+label.f i{color:var(--r);font-style:normal}
 input,textarea{width:100%;font:inherit;border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff;color:var(--ink)}
+input:disabled,textarea:disabled{background:#f3f4f8}
 .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .seg button{font:inherit;font-weight:600;padding:12px;border-radius:10px;border:2px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
 .seg button.on.yes{background:var(--g);border-color:var(--g);color:#fff}
 .seg button.on.no{background:var(--r);border-color:var(--r);color:#fff}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.tot{background:#e4e3fb;border-radius:10px;padding:10px 12px;font-weight:700;margin-top:12px}
+.two label.f{margin-top:14px}
 .btn{width:100%;margin-top:18px;font:inherit;font-weight:700;border:0;border-radius:12px;padding:14px;background:var(--acc);color:#fff;cursor:pointer}
 .btn:disabled{opacity:.6}
 .msg{border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:14px}
 .msg.ok{background:#dff5e9;color:#14613f}.msg.err{background:#fde3e4;color:#8a1f24}.msg.wait{background:#fff3cc;color:#6b5200}
+.pv{max-width:100%;max-height:220px;border-radius:10px;margin-top:8px;display:block}
+small.h{color:var(--ink2)}
 button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #a5a0f5;outline-offset:1px}
 </style>
 </head>
@@ -37,8 +42,10 @@ const $=s=>document.querySelector(s);
 const esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let code=(new URLSearchParams(location.search).get('c')||'').trim().toUpperCase();
 try{if(!code)code=localStorage.getItem('cmsa-code')||''}catch(e){}
-let ro=false,me=null,form={cm:'',offering:'',members:'',ft:'',note:''},msg=null,busy=false;
+const blank=()=>({held:'',date:'',time:'',venue:'',att:'',ft:'',ba:'',tg:'',offer:'',sa:'',note:'',photo:''});
+let ro=false,me=null,form=blank(),msg=null,busy=false;
 const STAT={pending:['wait','Submitted. Waiting for approval.'],approved:['ok','Approved. Thank you!'],rejected:['err','Your report needs a correction. Please update it and submit again.']};
+const today=new Date().toLocaleDateString('en-CA');
 
 async function load(){
   if(!code)return render();
@@ -46,10 +53,15 @@ async function load(){
     const r=await fetch('/api/me?code='+encodeURIComponent(code));const j=await r.json();
     if(!r.ok){msg=['err',j.error];me=null;code='';return render()}
     me=j;try{localStorage.setItem('cmsa-code',code)}catch(e){}
-    if(j.sub)form={cm:j.sub.cm==='g'?'yes':'no',offering:j.sub.offering==='y'?'yes':'no',members:j.sub.members,ft:j.sub.ft,note:j.sub.note||''};
+    if(j.sub){const s=j.sub;form=blank();Object.assign(form,{held:s.cm==='g'?'yes':'no',date:s.date,time:s.time,venue:s.venue,att:s.att,ft:s.ft,ba:s.ba,tg:s.tg,offer:s.offer,sa:s.sa,note:s.note});
+      for(const k in form)if(form[k]==null)form[k]=''}
   }catch(e){msg=['err','Could not reach the server. Check your internet and try again.']}
   render();
 }
+const inp=(k,label,type,extra='')=>`<label class="f" for="f-${k}">${label} <i>*</i></label><input id="f-${k}" type="${type}" ${extra} ${ro?'disabled':''} value="${esc(form[k])}">`;
+const num=(k,label)=>inp(k,label,'number','min="0" step="1" inputmode="numeric"');
+const seg=k=>`<div class="seg" data-k="${k}"><button class="yes ${form[k]==='yes'?'on':''}" data-v="yes" ${ro?'disabled':''}>Yes</button><button class="no ${form[k]==='no'?'on':''}" data-v="no" ${ro?'disabled':''}>No</button></div>`;
+
 function render(){
   const a=$('#app');
   if(!me){a.innerHTML=`<div class="card"><h2>Enter your access code</h2><p class="sub">Use the link you were sent, or type the code here.</p>
@@ -63,35 +75,62 @@ function render(){
   if(o.closed)h+=`<div class="msg wait">Submissions for this week are closed.</div>`;
   if(msg)h+=`<div class="msg ${msg[0]}">${esc(msg[1])}</div>`;
   else if(st)h+=`<div class="msg ${st[0]}">${st[1]}</div>`;
-  h+=`<label class="f">Did your cell meeting hold?</label>${seg('cm')}
-  <label class="f">Have you submitted your offering?</label>${seg('offering')}
-  <label class="f">Sunday service attendance</label>
-  <div class="two"><div><small>Members</small><input type="number" min="0" inputmode="numeric" id="mb" ${ro?'disabled':''} value="${esc(form.members)}"></div>
-  <div><small>First timers</small><input type="number" min="0" inputmode="numeric" id="ft" ${ro?'disabled':''} value="${esc(form.ft)}"></div></div>
-  <div class="tot">Total attendance: <span id="tt">${(+form.members||0)+(+form.ft||0)}</span></div>
-  <label class="f">Note (optional)</label><textarea id="nt" ${ro?'disabled':''} rows="2" maxlength="300">${esc(form.note)}</textarea>
-  <button class="btn" id="sb" ${locked||busy?'disabled':''}>${me.sub?'Update report':'Submit report'}</button></div>`;
-  a.innerHTML=h;
+  h+=`<label class="f">Did your cell meeting hold this week? <i>*</i></label>${seg('held')}`;
+  if(form.held==='yes'){
+    h+=`<h3>Meeting details</h3>
+    ${inp('date','Date of meeting','date',`max="${today}"`)}
+    ${inp('time','Time','time')}
+    ${inp('venue','Venue','text','maxlength="120" autocomplete="off"')}
+    <div class="two"><div>${num('att','Attendance')}</div><div>${num('ft','No. of first timers')}</div></div>
+    <div class="two"><div>${num('ba','No. got born again')}</div><div>${num('tg','No. spoke in tongues')}</div></div>
+    ${inp('offer','Offering taken (₦)','number','min="0" step="0.01" inputmode="decimal"')}
+    <label class="f" for="f-photo">Picture proof of the meeting (optional)</label>
+    <input id="f-photo" type="file" accept="image/*" ${ro?'disabled':''}>
+    ${form.photo?`<img class="pv" src="${form.photo}" alt="Photo preview">`:(me.sub&&me.sub.photo?'<small class="h">A photo is already attached. Choose another to replace it.</small>':'')}`;
+  }else if(form.held==='no'){
+    h+=`<label class="f" for="f-note">Why did the meeting not hold? <i>*</i></label><textarea id="f-note" rows="3" maxlength="300" ${ro?'disabled':''}>${esc(form.note)}</textarea>`;
+  }
+  if(form.held){
+    h+=`<h3>Sunday service</h3>${num('sa','Sunday service attendance')}`;
+    if(form.held==='yes')h+=`<label class="f" for="f-note">Note (optional)</label><textarea id="f-note" rows="2" maxlength="300" ${ro?'disabled':''}>${esc(form.note)}</textarea>`;
+    h+=`<button class="btn" id="sb" ${locked||busy?'disabled':''}>${me.sub?'Update report':'Submit report'}</button>`;
+  }
+  a.innerHTML=h+'</div>';
 }
-const seg=k=>`<div class="seg" data-k="${k}"><button class="yes ${form[k]==='yes'?'on':''}" data-v="yes" ${ro?'disabled':''}>Yes</button><button class="no ${form[k]==='no'?'on':''}" data-v="no" ${ro?'disabled':''}>No</button></div>`;
+
+function shrink(file){return new Promise((res,rej)=>{
+  const img=new Image(),u=URL.createObjectURL(file);
+  img.onload=()=>{const k=Math.min(1,1280/Math.max(img.width,img.height)),c=document.createElement('canvas');
+    c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',0.7))};
+  img.onerror=()=>rej(new Error('bad image'));img.src=u})}
+
 document.addEventListener('click',async e=>{
   if(e.target.id==='go'){code=$('#cd').value.trim().toUpperCase();msg=null;return load()}
   const b=e.target.closest('.seg button');
   if(b){form[b.parentNode.dataset.k]=b.dataset.v;msg=null;return render()}
   if(e.target.id==='sb'){
-    if(!form.cm||!form.offering||form.members===''||form.ft==='')return(msg=['err','Please answer every question and fill both attendance boxes (use 0 if none).'],render());
+    const need=form.held==='yes'?['date','time','venue','att','ft','ba','tg','offer','sa']:['sa','note'];
+    if(need.some(k=>String(form[k]).trim()===''))return(msg=['err','Please fill in every required box (use 0 where there is none).'],render(),window.scrollTo(0,0));
     busy=true;e.target.disabled=true;
+    const p={code,held:form.held==='yes',sa:form.sa,note:form.note};
+    if(p.held)Object.assign(p,{date:form.date,time:form.time,venue:form.venue,att:form.att,ft:form.ft,ba:form.ba,tg:form.tg,offer:form.offer,photo:form.photo||undefined});
     try{
-      const r=await fetch('/api/submit',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({code,cm:form.cm==='yes'?'g':'r',offering:form.offering==='yes'?'y':'n',members:form.members,ft:form.ft,note:form.note})});
+      const r=await fetch('/api/submit',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(p)});
       const j=await r.json();
-      if(!r.ok)msg=['err',j.error];else{me.sub=j.sub;msg=['ok','Submitted. Waiting for approval.']}
+      if(!r.ok)msg=['err',j.error];else{me.sub=j.sub;form.photo='';msg=['ok','Submitted. Waiting for approval.']}
     }catch(x){msg=['err','Could not submit. Check your internet and try again.']}
-    busy=false;render();
+    busy=false;render();window.scrollTo(0,0);
   }
 });
 document.addEventListener('input',e=>{
-  const m={mb:'members',ft:'ft',nt:'note'}[e.target.id];if(!m)return;form[m]=e.target.value;
-  if(m!=='note')$('#tt').textContent=(+form.members||0)+(+form.ft||0);
+  const k=(e.target.id||'').startsWith('f-')?e.target.id.slice(2):'';
+  if(k&&k!=='photo')form[k]=e.target.value;
+});
+document.addEventListener('change',async e=>{
+  if(e.target.id==='f-photo'&&e.target.files[0]){
+    try{form.photo=await shrink(e.target.files[0]);msg=null}catch(x){msg=['err','That picture could not be read. Try another one.']}
+    render()}
 });
 load();
 </script>
