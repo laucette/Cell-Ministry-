@@ -121,7 +121,7 @@ const pending=()=>srv.subs.filter(s=>s.status==='pending').length;
 /* ---------- stats / views ---------- */
 function stats(rows){const d=wk();let cm=0,of=0,late=0,sa=0,pend=0;
   rows.forEach(r=>{const e=d[rid(r)]||{};
-    if(e.cm==='g')cm++; if(e.off==='g'||e.off==='y')of++; if(e.off==='y')late++;
+    if(e.cm==='g'||e.cm==='y')cm++; if(e.off==='g'||e.off==='y')of++; if(e.off==='y')late++;
     if(e.sa>0)sa+=+e.sa; if(!e.cm||!e.off||e.sa==null)pend++});
   return{n:rows.length,cm,of,late,sa,pend}}
 
@@ -188,28 +188,33 @@ function subsView(){
   if(!list.length)return h+empty('No submissions for this week yet.');
   h+='<section class="card">';
   list.forEach(s=>{
-    const dflt=s.off||(s.offering==='y'?'g':'r');
+    const dflt=s.off||(s.offer>0?'g':'r'),cd=s.cmc||(s.cm==='g'?'g':'r'),det=s.cm==='g'&&s.date;
+    const opt=(v,d,t)=>`<option value="${v}" ${v===d?'selected':''}>${t}</option>`;
     h+=`<div class="sub"><b>${esc(s.leader)}</b><small>${esc(s.cell)} · ${esc(s.pcf)}</small>
     <div><span class="tag ${s.cm==='g'?'g':'r'}">Meeting ${s.cm==='g'?'held':'not held'}</span>
-    <span class="tag">${s.members} members + ${s.ft} first timers = ${s.sa}</span>
-    <span class="tag ${s.offering==='y'?'g':'r'}">Offering ${s.offering==='y'?'reported':'not reported'}</span>
+    ${det?`<span class="tag">${esc(s.date.split('-').reverse().join('/'))} · ${esc(s.time)}</span><span class="tag">${esc(s.venue)}</span><span class="tag">Attendance ${s.att}</span><span class="tag">First timers ${s.ft}</span><span class="tag">Born again ${s.ba}</span><span class="tag">Tongues ${s.tg}</span><span class="tag">Offering ₦${Number(s.offer).toLocaleString('en-NG')}</span>`:''}
+    <span class="tag">Sunday ${s.sa}</span>
     <span class="tag ${s.status==='pending'?'p':s.status==='approved'?'g':'r'}">${s.status}</span></div>
     <small>Submitted ${fmtT(s.ts)}${s.note?' · '+esc(s.note):''}</small>
-    <div class="acts"><select data-off="${s.code}" aria-label="Offering colour"><option value="g" ${dflt==='g'?'selected':''}>Offering: early</option><option value="y" ${dflt==='y'?'selected':''}>Offering: late</option><option value="r" ${dflt==='r'?'selected':''}>Offering: not submitted</option></select>
+    ${s.photo?`<div class="acts" style="margin-top:6px"><button class="btn alt sm" data-ph="${s.code}">View photo proof</button></div><div id="ph-${s.code}"></div>`:''}
+    <div class="acts"><select data-cmc="${s.code}" aria-label="Meeting colour">${opt('g',cd,'Meeting: early')}${opt('y',cd,'Meeting: late')}${opt('r',cd,'Meeting: not submitted')}</select>
+    <select data-off="${s.code}" aria-label="Offering colour">${opt('g',dflt,'Offering: early')}${opt('y',dflt,'Offering: late')}${opt('r',dflt,'Offering: not submitted')}</select>
     ${s.status!=='approved'?`<button class="btn ok sm" data-rv="approved" data-c="${s.code}">Approve</button>`:''}
     ${s.status==='pending'?`<button class="btn no sm" data-rv="rejected" data-c="${s.code}">Reject</button>`:''}
     ${s.status==='approved'?`<button class="btn alt sm" data-rv="pending" data-c="${s.code}">Undo</button>`:''}</div></div>`});
   return h+'</section>'}
 
-async function review(code,status,off){
+async function review(code,status,off,cmc){
   const s=srv.subs.find(x=>x.code===code);if(!s)return;
-  await api('admin/review',{y:S.y,m:S.m,w:S.w,code,status,off});
-  s.status=status;s.off=off;
+  await api('admin/review',{y:S.y,m:S.m,w:S.w,code,status,off,cmc});
+  s.status=status;s.off=off;s.cmc=cmc;
   const k=rid(s),e=(wk()[k]=wk()[k]||{});
-  if(status==='approved'){e.cm=s.cm;e.off=off;e.sa=s.sa}
-  else if(status==='pending'){delete e.cm;delete e.off;delete e.sa}
+  if(status==='approved'){e.cm=cmc;e.off=off;e.sa=s.sa;
+    if(s.cm==='g'&&s.date)e.det={date:s.date,time:s.time,venue:s.venue,att:s.att,ft:s.ft,ba:s.ba,tg:s.tg,offer:s.offer};else delete e.det}
+  else if(status==='pending'){delete e.cm;delete e.off;delete e.sa;delete e.det}
   save()}
-const offFor=c=>{const el=document.querySelector(`[data-off="${c}"]`);return el?el.value:'g'};
+const selFor=(a,c,d)=>{const el=document.querySelector(`[data-${a}="${c}"]`);return el?el.value:d};
+const offFor=c=>selFor('off',c,'g'),cmcFor=c=>selFor('cmc',c,'g');
 
 const link=r=>location.origin+'/submit.html?c='+r.code;
 const phone=r=>{let p=String(r.ph||'').replace(/\D/g,'');if(p.startsWith('0'))p='234'+p.slice(1);return p};
@@ -262,7 +267,7 @@ document.addEventListener('click',async e=>{
   const t=e.target.closest('[data-t]');
   if(t){S.tab=t.dataset.t;save();render();if(S.tab==='subs'&&AK()&&!srv.on)loadSrv();return}
   const q=e.target.closest('.sq');
-  if(q){const r=S.roster[+q.dataset.i],f=q.dataset.f,seq=f==='cm'?['','g','r']:['','g','y','r'];
+  if(q){const r=S.roster[+q.dataset.i],f=q.dataset.f,seq=['','g','y','r'];
     const row=(wk()[rid(r)]=wk()[rid(r)]||{});const nx=seq[(seq.indexOf(row[f]||'')+1)%seq.length];
     if(nx)row[f]=nx;else delete row[f];q.className='sq '+(nx||'n');return save()}
   const id=e.target.id;
@@ -277,10 +282,15 @@ document.addEventListener('click',async e=>{
     S.sent=S.sent||{};S.sent[r.code]=Date.now();save();bq.i++;return render()}
   if(id==='bq-sk'){bq.i++;return render()}
   if(id==='bq-x'){bq=null;return render()}
+  const ph=e.target.closest('[data-ph]');
+  if(ph){const c=ph.dataset.ph,box=document.getElementById('ph-'+c);ph.textContent='Loading…';
+    try{const r=await fetch(`/api/admin/photo?y=${S.y}&m=${S.m}&w=${S.w}&code=${c}`,{headers:{'x-admin-key':AK()}});if(!r.ok)throw 0;
+      const u=URL.createObjectURL(await r.blob());box.innerHTML=`<img src="${u}" alt="Meeting photo" style="max-width:100%;border-radius:10px;margin-top:8px">`;ph.remove()}
+    catch(x){ph.textContent='Could not load photo'}return}
   if(id==='op'){try{const j=await api('admin/open',{y:S.y,m:S.m,w:S.w});srv.open=j.open;srv.msg=''}catch(x){srv.msg=x.message}return render()}
   const rv=e.target.closest('[data-rv]');
-  if(rv){try{await review(rv.dataset.c,rv.dataset.rv,offFor(rv.dataset.c));srv.msg=''}catch(x){srv.msg=x.message}return render()}
-  if(id==='aa'){try{for(const s of srv.subs.filter(x=>x.status==='pending'))await review(s.code,'approved',offFor(s.code));srv.msg=''}catch(x){srv.msg=x.message}return render()}
+  if(rv){try{await review(rv.dataset.c,rv.dataset.rv,offFor(rv.dataset.c),cmcFor(rv.dataset.c));srv.msg=''}catch(x){srv.msg=x.message}return render()}
+  if(id==='aa'){try{for(const s of srv.subs.filter(x=>x.status==='pending'))await review(s.code,'approved',offFor(s.code),cmcFor(s.code));srv.msg=''}catch(x){srv.msg=x.message}return render()}
   const cp=e.target.closest('[data-cp]');
   if(cp){const r=S.roster[+cp.dataset.cp];try{await navigator.clipboard.writeText(link(r));cp.textContent='Copied'}catch(x){prompt('Copy this link',link(r))}return}
   if(id==='rs'){
@@ -329,6 +339,20 @@ async function exportXlsx(){
       fill(row.getCell(4),e.cm);fill(row.getCell(5),e.off);const k=sac(e);fill(row.getCell(6),k==='n'?'':k)})}
   const tr=ws.addRow(['','TOTAL','',`${a.cm} OUT OF ${a.n}`,`${a.of} OUT OF ${a.n}`,a.sa]);tr.font={bold:true};
   ws.eachRow(r=>r.eachCell(c=>{c.border={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}}}));
+  const det=[];let k2=0;
+  for(const p in g)g[p].forEach(r=>{const e=d[rid(r)]||{};if(e.det)det.push([++k2,r.pcf,r.leader,r.cell,e.det.date.split('-').reverse().join('/'),e.det.time,e.det.venue,e.det.att,e.det.ft,e.det.ba,e.det.tg,e.det.offer,e.sa??''])});
+  if(det.length){
+    const w2=wb.addWorksheet('Meeting details');
+    w2.columns=[6,18,26,26,14,9,26,12,14,14,14,16,16].map(width=>({width}));
+    const h2=w2.addRow(['S/N','PCF','LEADER','CELL NAME','DATE OF MEETING','TIME','VENUE','ATTENDANCE','NO. OF FIRST TIMERS','NO. GOT BORN AGAIN','NO. SPOKE IN TONGUES','OFFERING TAKEN (₦)','SUNDAY SERVICE ATTENDANCE']);
+    h2.font={bold:true};h2.alignment={horizontal:'center',vertical:'middle',wrapText:true};
+    det.forEach(r=>w2.addRow(r));
+    const last=det.length+1;
+    const sum=i=>det.reduce((t,r)=>t+(Number(r[i])||0),0);
+    const t2=w2.addRow(['','TOTAL','','','','','',...['H','I','J','K','L','M'].map((c,j)=>({formula:`SUM(${c}2:${c}${last})`,result:sum(7+j)}))]);
+    t2.font={bold:true};w2.getColumn(12).numFmt='#,##0.00';
+    w2.eachRow(r=>r.eachCell(c=>{c.border={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}}}));
+  }
   const buf=await wb.xlsx.writeBuffer();
   dl(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`CM_Summary_${M[S.m]}_Week${S.w}.xlsx`);
 }
